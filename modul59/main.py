@@ -48,6 +48,9 @@ class reestrWidget(QWidget, reestr_pb.Ui_Form):
     return True
   
   def CreateModel(self):
+    self.model = QSqlTableModel(self)
+    self.model.setTable("reestr")
+    self.model.setEditStrategy(QSqlTableModel.OnFieldChange)
     
     
   
