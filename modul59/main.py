@@ -19,6 +19,37 @@ class MainApp(QMainWindow, UiMainWindow): #основной класс глав�
     self.operR.show()
 
 class reestrWidget(QWidget, reestr_pb.Ui_Form):
+  def __init__(self, parent=None):
+    super(reestrWidget,self).__init__(parent)
+    self.setupUi(self)
+    self.Init_Ui() #подключение к БД и пр.
+  def init_Ui(self):
+    self.CreateConnection() #подключение к БД
+    self.CreateModel() #Создание модели таблицы
+    #строка поиска
+    filter_proxy_model = QSortFilterProxyModel()
+    filter_proxy_model.setSourceModel(self.model)
+    filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+    filter_proxy_model.setFilterKeyColumn(2)
+    search_field=self.search
+    search_field.textChanged.connect(filter_proxy_model.setFilterRegExp)
+    self.ReestrView.setModel(filter_proxy_model) #привязка отфильтрованной модели к таблице
+    
+    self.ReestrView.resizeColumnsToContents() #ресайз размера колонок по содержимому
+    self.ReestrView.hideColumn(0) #Скрываем столбец с ID
+    self.pushAdd.clicked.connect(self.addReestr)
+    self.pushDel.clicked.connect(self.delReestr)
+  def CreateConnection(self):
+    con = QSqlDatabase.addDatabase("QSQLITE")
+    con.setDatabaseName("clients.db")
+    if not con.open():
+      QMessageBox.critical(None,"QTableView Example - Error!", "Database Error: %s" % con.lastError().databasetext(),)
+      return False
+    return True
+  
+  def CreateModel(self):
+    
+    
   
   
   
