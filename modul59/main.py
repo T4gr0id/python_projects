@@ -65,7 +65,9 @@ class reestrWidget(QWidget, reestr_pb.Ui_Form):
     self.model.removeRow(self.ReestrView.currentIndex().row())
     self.model.select()
 if __name__ == '__main__':
-  app = QApplication(sys.argv)
-    
+  app = QApplication(sys.argv) #новый экземпляр класса QApplication
+  window = MainApp()  #объект класса MainApp
+  window.show() #запускаем окно
+  app.exec_() #запускаем приложение
   
   
