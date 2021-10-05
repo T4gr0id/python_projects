@@ -51,8 +51,21 @@ class reestrWidget(QWidget, reestr_pb.Ui_Form):
     self.model = QSqlTableModel(self)
     self.model.setTable("reestr")
     self.model.setEditStrategy(QSqlTableModel.OnFieldChange)
-    
-    
+    self.model.setHeaderData(0, QtHorizontal, "ID")
+    self.model.setHeaderData(1, QtHorizontal, "UN")
+    self.model.setHeaderData(2, QtHorizontal, "FIO")
+    self.model.setHeaderData(3, QtHorizontal, "BIRTHDATE")
+    self.model.setHeaderData(4, QtHorizontal, "CONTROL")
+    self.model.setHeaderData(5, QtHorizontal, "SANCTION")
+    self.model.select()
   
+  def addReestr(self): # добавить добавление строк с содержимым
+    self.modelinsertRow(self.model.rowCount())
+  def delReestr(self):
+    self.model.removeRow(self.ReestrView.currentIndex().row())
+    self.model.select()
+if __name__ == '__main__':
+  app = QApplication(sys.argv)
+    
   
   
