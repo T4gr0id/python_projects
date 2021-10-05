@@ -1,1 +1,9 @@
 
+Структура mainWindow:
+MainWindow:
+  Панель инструментов: QToolButton(reestr;load reestr;operations_59;operations;help);
+  Сведения из реестра:
+  Панель работы с реестром:
+    Присвоение статуса (statusPB),Удалить(delPB), Обновить(RefreshPB)
+  Общий реестр клиентов:
+    QTableView
