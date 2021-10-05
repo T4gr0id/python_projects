@@ -7,3 +7,11 @@ MainWindow:
     Присвоение статуса (statusPB),Удалить(delPB), Обновить(RefreshPB)
   Общий реестр клиентов:
     QTableView
+    
+Структура реестра:
+ReestrView - таблица
+search - строка поиска
+pushAdd - Добавить
+pushDel - Удалить
+pushComment
+pushRenew - обновить
