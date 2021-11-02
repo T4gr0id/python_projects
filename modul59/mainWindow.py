@@ -1,13 +1,6 @@
-# -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'D:\Python\Modul59\MainWindow.ui'
-#
-# Created by: PyQt5 UI code generator 5.9.2
-#
-# WARNING! All changes made in this file will be lost!
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+# noinspection PyInterpreter
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -124,8 +117,13 @@ class Ui_MainWindow(object):
         self.RefreshPB = QtWidgets.QToolButton(self.tab_1)
         self.RefreshPB.setGeometry(QtCore.QRect(250, 10, 110, 35))
         self.RefreshPB.setObjectName("RefreshPB")
+        # Добавление кнопки "Обновить строку"
+        self.refreshButton = QtWidgets.QToolButton(self.tab_1)
+        self.refreshButton.setGeometry(QtCore.QRect(370, 10, 110, 35))
+        self.refreshButton.setObjectName("refreshButton")
+
         self.search = QtWidgets.QLineEdit(self.tab_1)
-        self.search.setGeometry(QtCore.QRect(370, 10, 411, 31))
+        self.search.setGeometry(QtCore.QRect(490, 10, 400, 31))
         self.search.setObjectName("search")
         self.tabWidget.addTab(self.tab_1, "")
         self.tab_2 = QtWidgets.QWidget()
@@ -172,6 +170,7 @@ class Ui_MainWindow(object):
         self.StatusPB.setText(_translate("MainWindow", "Добавить клиента"))
         self.DelPB.setText(_translate("MainWindow", "Удалить строку"))
         self.RefreshPB.setText(_translate("MainWindow", "Обновить таблицу"))
+        self.refreshButton.setText(_translate("MainWindow", "Обновить строку"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_1), _translate("MainWindow", "Работа с таблицей"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Присвоение статуса"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Инобанк"))
