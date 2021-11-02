@@ -19,7 +19,7 @@ class MainApp(QMainWindow, Ui_MainWindow):  # основной класс гла
 
     def load_data(self, sp):  # заставка
         for i in range(1, 11):  # Имитируем процесс
-            time.sleep(1)  # Что-то загружаем
+            time.sleep(0.05)  # Что-то загружаем
             sp.showMessage("Загрузка данных... {0}%".format(i * 10),
                            QtCore.Qt.AlignHCenter | QtCore.Qt.AlignBottom, QtCore.Qt.white)
             QtWidgets.qApp.processEvents()  # Запускаем оборот цикла
@@ -33,6 +33,8 @@ class MainApp(QMainWindow, Ui_MainWindow):  # основной класс гла
         self.StatusPB.clicked.connect(self.addRecord)
         self.DelPB.clicked.connect(self.delRecord)
         self.RefreshPB.clicked.connect(self.refReestr)
+        self.refreshButton.clicked.connect(self.refreshRecord)
+
         # строка поиска
         self.filter_proxy_model = QtCore.QSortFilterProxyModel()
         self.filter_proxy_model.setSourceModel(self.model)
@@ -44,7 +46,6 @@ class MainApp(QMainWindow, Ui_MainWindow):  # основной класс гла
         self.MainReestr.resizeColumnsToContents()  # ресайз размера колонок по содержимому
         self.MainReestr.hideColumn(0)  # Скрываем столбец с ID
 
-        #self.MainReestr.doubleClicked.connect(self.onClick)
         # центрирование содержимого столбцов в таблице
         delegate = AlignDelegate(self.MainReestr)
         for x in range(12):
@@ -65,6 +66,8 @@ class MainApp(QMainWindow, Ui_MainWindow):  # основной класс гла
         self.sanction.addItems(spk_2)
         self.sanction.setCurrentIndex(-1)
 
+        self.refresh_row = -1   # Будет содержать индекс обновляемой строки(-1 запрет обновления)
+
         # событие выбора строки
         self.selection_model = self.MainReestr.selectionModel()
         self.selection_model.selectionChanged.connect(self.selection_changed)
@@ -75,6 +78,7 @@ class MainApp(QMainWindow, Ui_MainWindow):  # основной класс гла
         output = []
         if len(self.selection_model.selectedIndexes()) == 12:
             for row in rows:
+                self.refresh_row = row  # Сохраняем индекс выбранной строки для обновления
                 row_data = []
                 for column in range(self.MainReestr.model().columnCount()):
                     index = self.MainReestr.model().index(row, column)
@@ -145,21 +149,12 @@ class MainApp(QMainWindow, Ui_MainWindow):  # основной класс гла
                 self.comment.setText(row_data[11])
             else:
                 self.comment.setText('')
+        else:
+            self.refresh_row = -1   # Если не была выбрана строка целиком, сбрасываем индекс
 
+    #обновление модели
     def refReestr(self):
         self.model.select()
-
-    def onClick(self, signal):  # отлов индекса строки и столбца ячейки
-        row = signal.row()
-        column = signal.column()
-        cell_dict = self.model.itemData(signal)  # RETURNS DICT VALUE OF SIGNAL
-        cell_value = cell_dict.get(0)  # RETRIEVE VALUE FROM DICT
-
-        index = signal.sibling(row, 0)
-        index_dict = self.model.itemData(index)
-        index_value = index_dict.get(0)
-        # QMessageBox.about(self, 'Тестовое окно',
-        #    'Row {}, Column {} clicked - value: {}\nColumn 1 contents: {}'.format(row, column, cell_value, index_value))
 
     def addRecord(self):  # добавление в неотфильтрованную модель
         record = self.model.record()
@@ -186,9 +181,24 @@ class MainApp(QMainWindow, Ui_MainWindow):  # основной класс гла
         self.model.submitAll()
         self.model.select()
 
-    # def openReestr(self):
-    #    self.operR = reestrWidget()
-    #    self.operR.show()
+    def refreshRecord(self, MainReestr):  # Обновление строки в таблице (и базе данных)
+        if (self.refresh_row == -1):
+            return
+        record = self.model.record(self.refresh_row)
+        record.setValue(1, self.untb.text())
+        record.setValue(2, self.fio.text())
+        record.setValue(3, self.birthdate.text())
+        record.setValue(4, self.dul.text())
+        record.setValue(5, self.statusPB.currentText())
+        record.setValue(6, int(self.newStatusPB.currentIndex()))
+        record.setValue(7, int(self.inoBank.currentIndex()))
+        record.setValue(8, int(self.oes.currentIndex()))
+        record.setValue(9, int(self.control.currentIndex()))
+        record.setValue(10, int(self.sanction.currentIndex()))
+        record.setValue(11, self.comment.text())
+        self.model.setRecord(self.refresh_row, record)
+        self.model.select()
+        self.refresh_row = -1   # Запрет на последующие обновления до следующего выделения строки
 
     def CreateConnection(self):
         con = QSqlDatabase.addDatabase("QSQLITE")
@@ -200,7 +210,7 @@ class MainApp(QMainWindow, Ui_MainWindow):  # основной класс гла
         return True
 
     def CreateModel(self):
-        self.model = DelegateFromModel()
+        self.model = QSqlTableModel()
         self.model.setTable('mainReestr')
         self.model.setEditStrategy(QSqlTableModel.OnFieldChange)
         self.model.setHeaderData(1, QtCore.Qt.Horizontal, 'УНТБ')
@@ -339,89 +349,18 @@ class SimpleDateValidator(QtGui.QValidator):
             return self.Acceptable, text, pos
         return self.Intermediate, text, pos
 
-class DelegateFromModel(PyQt5.QtSql.QSqlTableModel):
-    def data(self, item, role):
-        if role == QtCore.Qt.BackgroundRole:  # перекрашивание определенного столбца по условию (Если в ячейке True)
+class AlignDelegate(QtWidgets.QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super().__init__()
 
-            if item.column() == 6 and QSqlQueryModel.data(self, self.index(item.row(), 6),
-                                                          QtCore.Qt.DisplayRole) == True:
-                return QtGui.QColor.fromRgb(50, 230, 50)
-            if item.column() == 7 and QSqlQueryModel.data(self, self.index(item.row(), 7),
-                                                          QtCore.Qt.DisplayRole) == True:
-                return QtGui.QColor.fromRgb(60, 179, 227)
-            if item.column() == 8 and QSqlQueryModel.data(self, self.index(item.row(), 8),
-                                                          QtCore.Qt.DisplayRole) == True:
-                return QtGui.QColor.fromRgb(230, 50, 50)
-            if item.column() == 9 and QSqlQueryModel.data(self, self.index(item.row(), 9),
-                                                          QtCore.Qt.DisplayRole) == True:
-                return QtGui.QColor.fromRgb(230, 50, 50)
-            if item.column() == 10 and QSqlQueryModel.data(self, self.index(item.row(), 10),
-                                                           QtCore.Qt.DisplayRole) == True:
-                return QtGui.QColor.fromRgb(230, 50, 50)
-        if role == QtCore.Qt.DisplayRole:  # возвращает вместо 1 и 0 в ячейках True и False
-            if item.column() == 6 or item.column() == 7 or item.column() == 8 or item.column() == 9 or item.column() == 10:
-                return 'Да' if QSqlQueryModel.data(self, item, QtCore.Qt.DisplayRole) == 1 else 'Нет'
-        return QSqlQueryModel.data(self, item, role)
-
-class AlignDelegate(QtWidgets.QStyledItemDelegate):  # делегат центрирования содержимого в столбцах
-    def initStyleOption(self, option, index):
-        super(AlignDelegate, self).initStyleOption(option, index)
+    def paint(self, painter, option, index):
         option.displayAlignment = QtCore.Qt.AlignCenter
+        col, _data = index.column(), index.data()
+        if col == 9 and _data == 1:
+            painter.fillRect(option.rect, QtCore.Qt.red)
+        QtWidgets.QStyledItemDelegate.paint(self, painter, option, index)
 
-'''
-class reestrWidget(QWidget, reestr_pb.Ui_Form):
-  def __init__(self, parent=None):
-    super(reestrWidget,self).__init__(parent)
-    self.setupUi(self)
-    self.Init_Ui() #подключение к БД и пр.
-  def init_Ui(self):
-    self.CreateConnection() #подключение к БД
-    self.CreateModel() #Создание модели таблицы
-    #строка поиска
-    filter_proxy_model = QSortFilterProxyModel()
-    filter_proxy_model.setSourceModel(self.model)
-    filter_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
-    filter_proxy_model.setFilterKeyColumn(2)
-    search_field=self.search
-    search_field.textChanged.connect(filter_proxy_model.setFilterRegExp)
-    self.ReestrView.setModel(filter_proxy_model) #привязка отфильтрованной модели к таблице
-    self.ReestrView.resizeColumnsToContents() #ресайз размера колонок по содержимому
-    self.ReestrView.hideColumn(0) #Скрываем столбец с ID
-    self.pushAdd.clicked.connect(self.addReestr)
-    self.pushDel.clicked.connect(self.delReestr)
-  def CreateConnection(self):
-    con = QSqlDatabase.addDatabase("QSQLITE")
-    con.setDatabaseName("clients.db")
-    if not con.open():
-      QMessageBox.critical(None,"QTableView Example - Error!", "Database Error: %s" % con.lastError().databasetext(),)
-      return False
-    return True
-  
-  def CreateModel(self):
-    self.model = QSqlTableModel(self)
-    self.model.setTable("reestr")
-    self.model.setEditStrategy(QSqlTableModel.OnFieldChange)
-    self.model.setHeaderData(0, QtHorizontal, "ID")
-    self.model.setHeaderData(1, QtHorizontal, "UN")
-    self.model.setHeaderData(2, QtHorizontal, "FIO")
-    self.model.setHeaderData(3, QtHorizontal, "BIRTHDATE")
-    self.model.setHeaderData(4, QtHorizontal, "CONTROL")
-    self.model.setHeaderData(5, QtHorizontal, "SANCTION")
-    self.model.select()
-  
-  def addReestr(self): # добавить добавление строк с содержимым
-    self.modelinsertRow(self.model.rowCount())
-  def delReestr(self):
-    self.model.removeRow(self.ReestrView.currentIndex().row())
-    self.model.select()
-'''
 if __name__ == '__main__':
-    '''
-    app = QApplication(sys.argv)  # новый экземпляр класса QApplication
-    window = MainApp()  # объект класса MainApp
-    window.show()  # запускаем окно
-    app.exec_()  # запускаем приложение
-    '''
     app = QtWidgets.QApplication(sys.argv)
     splash = QtWidgets.QSplashScreen(QtGui.QPixmap("img1.jpg"))
     splash.showMessage("Загрузка данных... 0%",
